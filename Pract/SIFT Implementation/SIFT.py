@@ -2,6 +2,39 @@ import numpy as np
 import cv2 as cv
 import math
 
+def getExtremaForScale(dog_scales, o, s):
+	# Where o is the octave we are currently looking at and s is the scale inside that octave which is currently ours
+	# Where i want to compare for dog_scales[o][s]
+	# Between that and dog_scales[o][s-1] and dog_scales[o][s+1]
+	
+	src = dog_scales[o][s]
+	down = dog_scales[o][s-1]
+	up = dog_scales[o][s+1]
+
+	# Lets first find maxima
+	for i in range(src.shape(0)):
+		for j in range(src.shape(1)):
+			# Case 0: If src[i][j] == -999 then we skip it all together: (Noice)
+				# here we compare the middle pixel to its neighbours and to its scale adjacent neighbours
+				# Case 1: Where src[i][j] is greater than another pixel
+
+				# Case 2: Where src[i][j] is less than or equal to another pixel
+					# In this case we replace src with -999 and break the loop
+
+
+
+
+	# Now we find minima
+
+def extremaDetection(original, dog_scales):
+	dog_len = len(dog_scales)
+	for j in range(dog_len):
+		dog_octaves = dog_scales[j]
+		dog_octave_length = len(dog_octaves)
+		
+		for i in range(1, octave_capacity-1):
+			
+
 
 def sift():
 	# Set all global variables like s (# if s = 2 then ks would be (2^(1/2)), 2(2^(1/2)) and so on and this time we will have 5 images in the stack)
@@ -39,11 +72,11 @@ def sift():
 	# Now we need to perform difference of gaussians
 	dog_scales = []
 	for j in range(octave_count):
-		dog_octaves = [] #one should know that this would always be octave_capaity - 2
-		for i in range(1, octave_capacity-1):
+		dog_octave = [] #one should know that this would always be octave_capaity - 1
+		for i in range(1, octave_capacity):
 			# when i'm at current. I want a DoG which i derive from gauss_scales[j][i-1] - gauss_scales[j][i]
 			curr_dog = gaussian_scales[j][i-1] - gaussian_scales[j][i]
-			dog_octaves.append(curr_dog)
+			dog_octave.append(curr_dog)
 		dog_scales.append(dog_octaves)
 	
 	# Now we have to write the algorithm which determines whether or not a pixel is a minima or maxima.
@@ -51,6 +84,11 @@ def sift():
         # For minimas #While traversing to check whether my current pixel is maximum. If it is greater than a neighbour then the neighbour turns to -1. If found a lesser pixel then turn self to 999. Complete the traversal to turn all pixels which are greater than your current pixel to 999
         # This should give you two arrays, Minimas and maximas. You now just have to merge them.
         # After merging you need to show these as keypoints 
+
+	# So we have four DoGs
+	# Extrema Detection
+	
+
 
 	print(dog_scales)
 
