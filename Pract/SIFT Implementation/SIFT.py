@@ -6,33 +6,64 @@ def getExtremaForScale(dog_scales, o, s):
 	# Where o is the octave we are currently looking at and s is the scale inside that octave which is currently ours
 	# Where i want to compare for dog_scales[o][s]
 	# Between that and dog_scales[o][s-1] and dog_scales[o][s+1]
-	
-	src = dog_scales[o][s]
-	down = dog_scales[o][s-1]
-	up = dog_scales[o][s+1]
+	src = cv.copyMakeBorder(dog_scales[o][s],1,1,1,1, cv.BORDER_CONSTANT,value=0)
+	down = np.zeros(src.shape())
+	up = np.zeros(src.shape())
+	down_empty = True
+	up_empty = True
+
+	if (s > 0):
+		down = cv.copyMakeBorder(dog_scales[o][s-1],1,1,1,1, cv.BORDER_CONSTANT,value=0)
+		down_empty = False
+
+	if (s < len(dog_scales[o])-1):
+		up = cv.copyMakeBorder(dog_scales[o][s+1],1,1,1,1, cv.BORDER_CONSTANT,value=0)
+		up_empty = False
+
+	dog_maxima = np.zeros(src.shape())
+	dog_minima = np.zeros(src.shape())
 
 	# Lets first find maxima
-	for i in range(src.shape(0)):
-		for j in range(src.shape(1)):
-			# Case 0: If src[i][j] == -999 then we skip it all together: (Noice)
-				# here we compare the middle pixel to its neighbours and to its scale adjacent neighbours
-				# Case 1: Where src[i][j] is greater than another pixel
+	for i in range(1, src.shape(0)-1):
+		for j in range(1, src.shape(1)-1):
+			curr = src[i][j]
+			src_neighbourhood = np.ravel(src[i-1:i+1, j-1:j+1])
+			up_neighbourhood = np.ravel(up[i-1:i+1, j-1:j+1])
+			down_neighbourhood = np.ravel(down[i-1:i+1, j-1:j+1])
+			# What i should do is traverse over all neighbours one by one and determine if its max or not. That is the most efficient
+			# But currently i am not doing that
+			conc = np.concatenate((src_neighbourhood, up_neighbourhood, down_neighbourhood))
 
-				# Case 2: Where src[i][j] is less than or equal to another pixel
-					# In this case we replace src with -999 and break the loop
+			if (curr == np.max(conc)):
+				dog_maxima[i][j] == 1
 
+			if (curr == np.min(conc)):
+				dog_minima[i][j] == 1
 
+			
+	dog_scales[o][s] = src
+	if (down_empty == False):
+		dog_scales[o][s-1] = down
+	if (up_empty == False):
+		dog_scales[o][s+1] = up
 
-
-	# Now we find minima
+	return dog_maxima + dog_minima
 
 def extremaDetection(original, dog_scales):
 	dog_len = len(dog_scales)
+	extrema_scales = []
 	for j in range(dog_len):
 		dog_octaves = dog_scales[j]
 		dog_octave_length = len(dog_octaves)
-		
-		for i in range(1, octave_capacity-1):
+		extrema_octave = []
+		for i in range(dog_octave_length):
+			extrema = getExtremaForScale(dog_scales, j, i)
+			extrema_octave.append(extrema)
+
+		extrema_scales.append(extrema_octave)
+	return extrema_scales
+
+			
 			
 
 
