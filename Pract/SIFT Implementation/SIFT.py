@@ -2,13 +2,16 @@ import numpy as np
 import cv2 as cv
 import math
 
+# Legend:
+# "====> Note: " Refers to refactoring notes
+
 def getExtremaForScale(dog_scales, o, s):
 	# Where o is the octave we are currently looking at and s is the scale inside that octave which is currently ours
 	# Where i want to compare for dog_scales[o][s]
 	# Between that and dog_scales[o][s-1] and dog_scales[o][s+1]
 	src = cv.copyMakeBorder(dog_scales[o][s],1,1,1,1, cv.BORDER_CONSTANT,value=0)
-	down = np.zeros(src.shape())
-	up = np.zeros(src.shape())
+	down = np.zeros(src.shape)
+	up = np.zeros(src.shape)
 	down_empty = True
 	up_empty = True
 
@@ -20,25 +23,27 @@ def getExtremaForScale(dog_scales, o, s):
 		up = cv.copyMakeBorder(dog_scales[o][s+1],1,1,1,1, cv.BORDER_CONSTANT,value=0)
 		up_empty = False
 
-	dog_maxima = np.zeros(src.shape())
-	dog_minima = np.zeros(src.shape())
+	dog_maxima = np.zeros(src.shape)
+	dog_minima = np.zeros(src.shape)
 
 	# Lets first find maxima
-	for i in range(1, src.shape(0)-1):
-		for j in range(1, src.shape(1)-1):
+	for i in range(1, src.shape[0]-1):
+		for j in range(1, src.shape[1]-1):
 			curr = src[i][j]
-			src_neighbourhood = np.ravel(src[i-1:i+1, j-1:j+1])
-			up_neighbourhood = np.ravel(up[i-1:i+1, j-1:j+1])
-			down_neighbourhood = np.ravel(down[i-1:i+1, j-1:j+1])
-			# What i should do is traverse over all neighbours one by one and determine if its max or not. That is the most efficient
+			src_neighbourhood = src[i-1:i+1, j-1:j+1]
+			up_neighbourhood = up[i-1:i+1, j-1:j+1]
+			down_neighbourhood = down[i-1:i+1, j-1:j+1]
+			# ====> Note: What i should do is traverse over all neighbours one by one and determine if its max or not. That is the most efficient
 			# But currently i am not doing that
 			conc = np.concatenate((src_neighbourhood, up_neighbourhood, down_neighbourhood))
 
 			if (curr == np.max(conc)):
-				dog_maxima[i][j] == 1
+				dog_maxima[i, j] = 255
 
 			if (curr == np.min(conc)):
-				dog_minima[i][j] == 1
+				dog_minima[i][j] = 255
+			
+
 
 			
 	dog_scales[o][s] = src
@@ -59,6 +64,8 @@ def extremaDetection(original, dog_scales):
 		for i in range(dog_octave_length):
 			extrema = getExtremaForScale(dog_scales, j, i)
 			extrema_octave.append(extrema)
+			# cv.imshow("extrema_sample", extrema)
+
 
 		extrema_scales.append(extrema_octave)
 	return extrema_scales
@@ -108,7 +115,7 @@ def sift():
 			# when i'm at current. I want a DoG which i derive from gauss_scales[j][i-1] - gauss_scales[j][i]
 			curr_dog = gaussian_scales[j][i-1] - gaussian_scales[j][i]
 			dog_octave.append(curr_dog)
-		dog_scales.append(dog_octaves)
+		dog_scales.append(dog_octave)
 	
 	# Now we have to write the algorithm which determines whether or not a pixel is a minima or maxima.
 	# #To get maximas # While traversing to check whether my current pixel is maximum. If it is greater than a neighbour then the neighbour turns to -1. If found a greater pixel then turn self to -1. Complete the traversal to turn all pixels which are less than your current pixel to -1
@@ -118,7 +125,9 @@ def sift():
 
 	# So we have four DoGs
 	# Extrema Detection
-	
+	extremaDetection(original, dog_scales)
+
+	# ============== Here goes the rest of the code ============= regarding orientation assigning and final orientation and processing
 
 
 	print(dog_scales)
@@ -132,8 +141,8 @@ def sift():
 	# cv.imshow("Scale Space Second Multiple: ", sample2) 
 	# cv.imshow("Difference of Gaussians: ", dog) 
 
-	# cv.waitKey(0)
-	# cv.destroyAllWindows()
+	cv.waitKey(0)
+	cv.destroyAllWindows()
 
 	return
 
