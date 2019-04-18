@@ -77,7 +77,7 @@ def extremaDetection(original, dog_scales):
 
 def sift():
 	# Set all global variables like s (# if s = 2 then ks would be (2^(1/2)), 2(2^(1/2)) and so on and this time we will have 5 images in the stack)
-	s = 2
+	s = 2 #It should be noted that an octave should have 3 samplings
 	sigma = 1.0
 	k = math.pow(2, 1/s)
 	octave_capacity = s + 3
@@ -127,6 +127,12 @@ def sift():
 	# So we have four DoGs
 	# Extrema Detection
 	extremaDetection(original, dog_scales)
+
+	# ============= We will ignore implementation of 3.2 and 3.3
+
+	# ============= 4: Now we perform removal of extrema responses. Out of all the extremas we calculated we need to reject extrema points which have a value of D[x] < 0.03 where image pixel is between 0, 1 or if we are looking at 0,255 then < 7. D[xhat] = D + 0.5(partialDeriv(D)' / partialDeriv(x))xhat
+	
+	# ============= 4.1: A poorly defined keypoint in the extrema will have a large prinicipal of curvature. (That is keypoint on a straight edge). read up on prinicipal Curvature. Create the Hessian Matrix (Yeh kis tarah banana hai). Determine Tr(H)^2/Det(H) < (r+1)^2/r where r = 10. If this is true then we keep the extrema otherwise we dont keep the extrema. As the ratio of the prinicipal curvate is greater than 10. Basically The ratio will be great if the prinicipal curvature is large across the edge and small to its perpendicular. This will mean that the keypoint was poor and probably on a straight edge.
 
 	# ============== Here goes the rest of the code ============= regarding orientation assigning and final orientation and processing
 
