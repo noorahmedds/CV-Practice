@@ -27,20 +27,20 @@ def getExtremaForScale(dog_scales, o, s):
 	dog_minima = np.zeros(src.shape)
 
 	# Lets first find maxima
-	for i in range(1, src.shape[0]-1):
-		for j in range(1, src.shape[1]-1):
+	for i in range(1, src.shape[0]-2):
+		for j in range(1, src.shape[1]-2):
 			curr = src[i][j]
 			src_neighbourhood = src[i-1:i+1, j-1:j+1]
 			up_neighbourhood = up[i-1:i+1, j-1:j+1]
 			down_neighbourhood = down[i-1:i+1, j-1:j+1]
 			# ====> Note: What i should do is traverse over all neighbours one by one and determine if its max or not. That is the most efficient
 			# But currently i am not doing that
-			conc = np.concatenate((src_neighbourhood, up_neighbourhood, down_neighbourhood))
+			conc = np.vstack((src_neighbourhood, up_neighbourhood, down_neighbourhood))
 
-			if (curr == np.max(conc)):
+			if (curr == np.max((src_neighbourhood, up_neighbourhood, down_neighbourhood))):
 				dog_maxima[i, j] = 255
 
-			if (curr == np.min(conc)):
+			if (curr == np.min((src_neighbourhood, up_neighbourhood, down_neighbourhood))):
 				dog_minima[i][j] = 255
 			
 
@@ -61,10 +61,11 @@ def extremaDetection(original, dog_scales):
 		dog_octaves = dog_scales[j]
 		dog_octave_length = len(dog_octaves)
 		extrema_octave = []
-		for i in range(dog_octave_length):
+		for i in range(0, dog_octave_length):
 			extrema = getExtremaForScale(dog_scales, j, i)
 			extrema_octave.append(extrema)
-			# cv.imshow("extrema_sample", extrema)
+			cv.imshow("extrema_sample", extrema)
+			cv.waitKey(0)
 
 
 		extrema_scales.append(extrema_octave)
