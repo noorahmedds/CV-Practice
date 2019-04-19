@@ -126,15 +126,41 @@ def sift():
 
 	# So we have four DoGs
 	# Extrema Detection
-	extremaDetection(original, dog_scales)
+	extrema_scales = extremaDetection(original, dog_scales)
 
 	# ============= We will ignore implementation of 3.2 and 3.3
 
 	# ============= 4: Now we perform removal of extrema responses. Out of all the extremas we calculated we need to reject extrema points which have a value of D[x] < 0.03 where image pixel is between 0, 1 or if we are looking at 0,255 then < 7. D[xhat] = D + 0.5(partialDeriv(D)' / partialDeriv(x))xhat
 	
 	# ============= 4.1: A poorly defined keypoint in the extrema will have a large prinicipal of curvature. (That is keypoint on a straight edge). read up on prinicipal Curvature. Create the Hessian Matrix (Yeh kis tarah banana hai). Determine Tr(H)^2/Det(H) < (r+1)^2/r where r = 10. If this is true then we keep the extrema otherwise we dont keep the extrema. As the ratio of the prinicipal curvate is greater than 10. Basically The ratio will be great if the prinicipal curvature is large across the edge and small to its perpendicular. This will mean that the keypoint was poor and probably on a straight edge.
+	# To caluclate a Hessian matrix we need to make a derivative of the image and then another derivitive in each individual direction.
+	extrema_sample = extrema_scales[0][3]
+	gx = cv.GaussianBlur(extrema_sample,(3,1), 1)
+	gy = cv.GaussianBlur(extrema_sample,(1,3), 1)
+
+	gxx =  cv.GaussianBlur(gx, (3,1), 1)
+	gxy =  cv.GaussianBlur(gx, (1,3), 1)
+
+	gyx = cv.GaussianBlur(gy, (3,1), 1)
+	gyy = cv.GaussianBlur(gy, (1,3), 1)
+
+	# No we traverse all four arrays and get the intermediate 2x2 array which we use to find trace and Det
+	# Tr(H) = Dxx + Dyy = α + β,
+	# Det(H) = DxxDyy − (Dxy)2 = αβ.
+
+	for i in range(gxx.shape[0]):
+		for j in range(gxx.shape[1]):
+			hessian = [[gxx[i,j],gxy[i,j]],[gyx[i,j], gyy[i,j]]]
+			trace = 0
+			det = 0
+			if (Math.pow(trace, 2)/det > 10):
+				# eliminate this point
+		
+
 
 	# ============== Here goes the rest of the code ============= regarding orientation assigning and final orientation and processing
+
+	# ============== Local Image Descriptor
 
 
 	print(dog_scales)
