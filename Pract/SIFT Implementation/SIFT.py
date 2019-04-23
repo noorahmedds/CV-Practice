@@ -1,9 +1,17 @@
 import numpy as np
 import cv2 as cv
 import math
+import matplotlib.pyplot as plt
 
 # Legend:
 # "====> Note: " Refers to refactoring notes
+
+def generateGaussian(_sigma, _mu, shape=(10,10)):
+	x, y = np.meshgrid(np.linspace(-1,1,shape[0]), np.linspace(-1,1,shape[1]))
+	d = np.sqrt(x*x+y*y)
+	sigma, mu = _sigma, _mu
+	g = np.exp(-((d-mu)**2 / (2.0 * sigma**2)))
+	return g
 
 def getExtremaForScale(dog_scales, o, s):
 	# Where o is the octave we are currently looking at and s is the scale inside that octave which is currently ours
@@ -64,8 +72,8 @@ def extremaDetection(original, dog_scales):
 		for i in range(0, dog_octave_length):
 			extrema = getExtremaForScale(dog_scales, j, i)
 			extrema_octave.append(extrema)
-			cv.imshow("extrema_sample", extrema)
-			cv.waitKey(0)
+			# cv.imshow("extrema_sample", extrema)
+			# cv.waitKey(0)
 
 
 		extrema_scales.append(extrema_octave)
@@ -73,7 +81,21 @@ def extremaDetection(original, dog_scales):
 
 			
 			
-
+def generateLocalHistogram(src, i, j, g, n_size=(5,5)):
+	# where src[i,j] is the keypoint. g is the gaussian kernel
+	# We need to traverse a local neigbourhood of keypoint. n_szie(5,5)
+	# generate a histogram with 36 bins and return them
+	# first we generate the orientation and 
+	hist_elements = []
+	for ii in range(-2, 3):
+		for jj in range(-2,3):
+			_i = i + ii
+			_j = j + jj
+			m = math.sqrt(math.pow(src[_i+1, _j]-src[_i-1, _j],2) + math.pow(src[_i, _j+1]-src[_i, _j-1],2)) #this could be done with a kernel
+			theta = math.tanh((src[_i, _j+1]-src[_i, _j-1])/(src[_i+1, _j]-src[_i-1, _j]))
+			hist_elements.append(m * theta * g[ii+2, jj+2])
+	# print(hist_elements)
+	return np.histogram(hist_elements, bins=np.arange(36))
 
 def sift():
 	# Set all global variables like s (# if s = 2 then ks would be (2^(1/2)), 2(2^(1/2)) and so on and this time we will have 5 images in the stack)
@@ -117,6 +139,7 @@ def sift():
 			curr_dog = gaussian_scales[j][i-1] - gaussian_scales[j][i]
 			dog_octave.append(curr_dog)
 		dog_scales.append(dog_octave)
+	print("Generated Difference of Gaussians")
 	
 	# Now we have to write the algorithm which determines whether or not a pixel is a minima or maxima.
 	# #To get maximas # While traversing to check whether my current pixel is maximum. If it is greater than a neighbour then the neighbour turns to -1. If found a greater pixel then turn self to -1. Complete the traversal to turn all pixels which are less than your current pixel to -1
@@ -127,6 +150,7 @@ def sift():
 	# So we have four DoGs
 	# Extrema Detection
 	extrema_scales = extremaDetection(original, dog_scales)
+	print("Detected Extremas")
 
 	# ============= We will ignore implementation of 3.2 and 3.3
 
@@ -135,6 +159,7 @@ def sift():
 	# ============= 4.1: A poorly defined keypoint in the extrema will have a large prinicipal of curvature. (That is keypoint on a straight edge). read up on prinicipal Curvature. Create the Hessian Matrix (Yeh kis tarah banana hai). Determine Tr(H)^2/Det(H) < (r+1)^2/r where r = 10. If this is true then we keep the extrema otherwise we dont keep the extrema. As the ratio of the prinicipal curvate is greater than 10. Basically The ratio will be great if the prinicipal curvature is large across the edge and small to its perpendicular. This will mean that the keypoint was poor and probably on a straight edge.
 	# To caluclate a Hessian matrix we need to make a derivative of the image and then another derivitive in each individual direction.
 	extrema_sample = extrema_scales[0][3]
+	gaussian_sample = gaussian_scales[0][3]
 	gx = cv.GaussianBlur(extrema_sample,(3,1), 1)
 	gy = cv.GaussianBlur(extrema_sample,(1,3), 1)
 
@@ -145,25 +170,51 @@ def sift():
 	gyy = cv.GaussianBlur(gy, (1,3), 1)
 
 	# No we traverse all four arrays and get the intermediate 2x2 array which we use to find trace and Det
-	# Tr(H) = Dxx + Dyy = α + β,
+	# Tr(H) = Dxx + Dyy = α + β
 	# Det(H) = DxxDyy − (Dxy)2 = αβ.
+
+	# cv.imshow("Extrema Sample", extrema_sample)
 
 	for i in range(gxx.shape[0]):
 		for j in range(gxx.shape[1]):
-			hessian = [[gxx[i,j],gxy[i,j]],[gyx[i,j], gyy[i,j]]]
-			trace = 0
-			det = 0
-			if (Math.pow(trace, 2)/det > 10):
+			hessian = np.array([[gxx[i,j],gxy[i,j]],[gyx[i,j], gyy[i,j]]])
+			trace = np.trace(hessian)
+			det = np.linalg.det(hessian)
+			if (math.pow(trace, 2)/det > 10):
 				# eliminate this point
-		
+				extrema_sample[i, j] = 0
 
+	print("Removed Extraneous Keypoints")
+	cv.imshow("Fixed Sample", extrema_sample)
 
-	# ============== Here goes the rest of the code ============= regarding orientation assigning and final orientation and processing
+	# ============== Here goes the rest of the code ============= Orientation Assignment: regarding orientation assigning and final orientation and processing
+	# For orientation we first need to store a window of sample points around a keypoint
+	# for these sample points we create a histogram which will have 36 bins for 360 degrees.
+	# The hist will contain orinetations such that each element of the histogram will represent the following
+		# element = m(x,y) * theta(x,y) * gaussian_weight(x,y) 
+		# (The gaussian weight basically is the gaussian weight from a circular gaussian kernel that is centered on the keypoint with a sigma 1.5 times the current scale)
+		# The circular kernel should be of the radius used for the kernels above
+	
+	gaussian_weights = generateGaussian(1.0, 0, shape=(5,5)) #this will have variable sigma obviously
+	extrema_sample = cv.copyMakeBorder(extrema_sample, 4,4,4,4, cv.BORDER_CONSTANT, value=0) #we pad the image with 4 pixels on each side for ease of coding
+	gaussian_sample = cv.copyMakeBorder(gaussian_sample, 8,8,8,8, cv.BORDER_CONSTANT, value=0)
+
+	print("Extrema Shape: ", extrema_sample.shape)
+	print("Gaussian Shape: ", gaussian_sample.shape)
+
+	hists = []
+	for i in range(5, extrema_sample.shape[0]-5):
+		for j in range(5, extrema_sample.shape[1]-5):
+			if extrema_sample[i, j] == 255:
+				# keypoint detected
+				hists.append(generateLocalHistogram(gaussian_sample, i, j, gaussian_weights))
+
+	plt.hist(hists[10], bins='auto')
+	plt.show()
+
 
 	# ============== Local Image Descriptor
 
-
-	print(dog_scales)
 
 	# # Example
 	# sample1 = cv.GaussianBlur(gray, (11,11), 0.1)
